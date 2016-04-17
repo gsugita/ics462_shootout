@@ -66,8 +66,12 @@ class RobotPlayer : public LocalPlayer {
 	bool		RobotPlayer::isTeamFlag(float dt);
 	bool		RobotPlayer::isMyTeamFlag(float dt);
 	void		RobotPlayer::dropFlag(float dt);
+	
+	void		RobotPlayer::findMyFlag(float location[], const float baseLoc[], const float carrierLoc[], Flag& flagg);
+	void		RobotPlayer::locationFinder(const float baseLoc[], const float carrierLoc[], Flag& flagg);
 
   private:
+  int			choice;
     void		doUpdate(float dt);
     void		doUpdateMotion(float dt);
     BzfRegion*		findRegion(const float p[2], float nearest[2]) const;
