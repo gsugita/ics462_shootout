@@ -622,12 +622,38 @@ void			RobotPlayer::setTarget(const Player* _target)
   target = _target;
   //if (!target) return;
 
+//for testing purposes
+choice = 2;
+
   TeamColor myteam = getTeam();
+  const float* myPos = getPosition();
+  const float* baseLoc;
+  const float* carrierLoc;
+  Flag& flag = World::getWorld()->getFlag(0);
+
+  locationFinder(baseLoc,carrierLoc,flag);
+
   float goalPos[3];
-  if (myTeamHoldingOpponentFlag())
+  if (myTeamHoldingOpponentFlag() && choice == 1)
 	  findHomeBase(myteam, goalPos);
-  else
+  else if (choice == 1) {
 	  findOpponentFlag(goalPos);
+  }
+  else if (choice == 2 && 
+	  ((myPos[0] <= baseLoc[0] && myPos[0] >= carrierLoc[0]) && (myPos[1] >= baseLoc[1] && myPos[1] <= carrierLoc[1])) ||
+	  ((myPos[0] <= baseLoc[0] && myPos[0] >= carrierLoc[0]) && (myPos[1] <= baseLoc[1] && myPos[1] >= carrierLoc[1])) ||
+	  ((myPos[0] >= baseLoc[0] && myPos[0] <= carrierLoc[0]) && (myPos[1] <= baseLoc[1] && myPos[1] >= carrierLoc[1])) ||
+	  ((myPos[0] >= baseLoc[0] && myPos[0] <= carrierLoc[0]) && (myPos[1] >= baseLoc[1] && myPos[1] <= carrierLoc[1])) ||
+	  (flag.owner == getId())
+	  ) 
+  {
+	  findMyFlag(goalPos, baseLoc, carrierLoc, flag);
+  }
+  else if (choice == 2) {
+	  goalPos[0] = baseLoc[0];
+	  goalPos[1] = baseLoc[1];
+	  goalPos[2] = baseLoc[2];
+  }
 
   AStarNode goalNode(goalPos);
   if (!paths.empty() && goalNode == pathGoalNode)
@@ -1075,6 +1101,60 @@ void		RobotPlayer::findOpponentFlag(float location[3])
 			return;
 		}
 	}
+}
+
+void		RobotPlayer::findMyFlag(float location[3], const float baseLoc [3], const float carrierLoc[3], Flag& flag)
+{
+			if (flag.status == FlagOnGround) {
+				location[0] = flag.position[0];
+				location[1] = flag.position[1];
+				location[2] = flag.position[2];
+				return;
+			}
+			if (getId() == flag.owner) {
+				location[0] = baseLoc[0];
+				location[1] = baseLoc[1];
+				location[2] = baseLoc[2];
+				if ((getPosition()[0] == baseLoc[0]) && (getPosition()[1] == baseLoc[1]) && (getPosition()[2] == baseLoc[2])) {
+					ServerLink::getServer()->sendDropFlag(getId(), getPosition());
+				}
+				return;
+			}
+			if (getId() != flag.owner) {
+				location[0] = carrierLoc[0];
+				location[1] = carrierLoc[1];
+				location[2] = carrierLoc[2];
+				return;
+			}
+}
+
+void		RobotPlayer::locationFinder(const float baseLoc[3], const float carrierLoc[3], Flag& flagg) {
+	World* world = World::getWorld();
+	TeamColor myTeamColor = getTeam();
+	if (!world->allowTeamFlags()) return;
+	for (int i = 0; i < numFlags; i++) {
+		Flag& flag = World::getWorld()->getFlag(i);
+		TeamColor flagTeamColor = flag.type->flagTeam;
+		if (flagTeamColor == myTeamColor) {
+			for (int t = 0; t < World::getWorld()->getCurMaxPlayers(); t++) {
+				Player *p = 0;
+				float* s;
+				p = World::getWorld()->getPlayer(t);
+
+				if (p) {
+					if (p->getId() == flag.owner) {
+						baseLoc = World::getWorld()->getBase(p->getTeam(), 0);
+						carrierLoc = p->getPosition();
+						flagg = flag;
+						return;
+					}
+				}
+			}
+			flagg = flag;
+		}
+	}
+	baseLoc = World::getWorld()->getBase(getTeam(), 0);
+	carrierLoc = getPosition();
 }
 
 /*
