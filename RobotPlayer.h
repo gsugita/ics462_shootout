@@ -69,6 +69,11 @@ class RobotPlayer : public LocalPlayer {
 	bool		RobotPlayer::isTeamFlag(float dt);
 	bool		RobotPlayer::isMyTeamFlag(float dt);
 	void		RobotPlayer::dropFlag(float dt);
+	
+	bool		checkPursuit();
+	bool		checkReturnFlag();
+	bool		checkHoldingOwnFlag();
+	bool		checkToBase();
 
   private:
     void		doUpdate(float dt);
